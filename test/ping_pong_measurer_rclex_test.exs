@@ -1,6 +1,8 @@
 defmodule PingPongMeasurerRclexTest do
   use ExUnit.Case
 
+  @moduletag capture_log: true
+
   alias PingPongMeasurerRclex.Ping
   alias PingPongMeasurerRclex.Pong
   alias PingPongMeasurerRclex.Utils
