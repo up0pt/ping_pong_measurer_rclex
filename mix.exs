@@ -21,7 +21,8 @@ defmodule PingPongMeasurerRclex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rclex, "~> 0.7.2"}
+      {:rclex, "~> 0.7.2"},
+      {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 end
