@@ -8,7 +8,17 @@ defmodule PingPongMeasurerRclex.Ping do
   @ping_counts_max 100
 
   defmodule State do
-    defstruct node_id: nil, publisher: nil, payload: "", ping_counts: 0
+    defstruct node_id: nil, publisher: nil, payload: "", ping_counts: 0, measurements: []
+  end
+
+  defmodule Measurement do
+    defstruct measurement_time: nil, send_time: nil, recv_time: nil
+
+    @type t() :: %__MODULE__{
+            measurement_time: DateTime.t(),
+            send_time: integer(),
+            recv_time: integer()
+          }
   end
 
   def start_link({_, node_index} = args_tuple) do
@@ -43,13 +53,32 @@ defmodule PingPongMeasurerRclex.Ping do
     GenServer.call(Utils.get_process_name(__MODULE__, node_index), :publish)
   end
 
-  def handle_call(:publish, _from, state) do
+  def handle_call(
+        :publish,
+        _from,
+        %State{ping_counts: ping_counts, measurements: measurements} = state
+      ) do
     state =
-      if state.ping_counts < @ping_counts_max do
-        ping(state)
-        %State{state | ping_counts: state.ping_counts + 1}
-      else
-        state
+      case ping_counts do
+        0 ->
+          measurement = %Measurement{
+            measurement_time: DateTime.utc_now(),
+            send_time: System.monotonic_time(:microsecond)
+          }
+
+          ping(state)
+          %State{state | ping_counts: ping_counts + 1, measurements: [measurement | measurements]}
+
+        @ping_counts_max ->
+          [h | t] = measurements
+          measurement = %Measurement{h | recv_time: System.monotonic_time(:microsecond)}
+          IO.inspect("#{inspect((measurement.recv_time - measurement.send_time) / 1000)} msec")
+
+          %State{state | ping_counts: 0, measurements: [measurement | t]}
+
+        _ ->
+          ping(state)
+          %State{state | ping_counts: ping_counts + 1}
       end
 
     {:reply, :ok, state}
