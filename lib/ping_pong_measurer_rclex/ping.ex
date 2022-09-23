@@ -5,8 +5,10 @@ defmodule PingPongMeasurerRclex.Ping do
 
   alias PingPongMeasurerRclex.Utils
 
+  @ping_counts_max 100
+
   defmodule State do
-    defstruct node_id: nil, publisher: nil, payload: ""
+    defstruct node_id: nil, publisher: nil, payload: "", ping_counts: 0
   end
 
   def start_link({_, node_index} = args_tuple) do
@@ -29,6 +31,7 @@ defmodule PingPongMeasurerRclex.Ping do
       recv_msg = Rclex.Msg.read(msg, 'StdMsgs.Msg.String')
 
       Logger.info('pong: ' ++ recv_msg.data)
+      publish(node_index)
     end)
 
     payload = Utils.create_payload('message')
@@ -41,7 +44,18 @@ defmodule PingPongMeasurerRclex.Ping do
   end
 
   def handle_call(:publish, _from, state) do
-    Rclex.Publisher.publish([state.publisher], [state.payload])
+    state =
+      if state.ping_counts < @ping_counts_max do
+        ping(state)
+        %State{state | ping_counts: state.ping_counts + 1}
+      else
+        state
+      end
+
     {:reply, :ok, state}
+  end
+
+  defp ping(%State{} = state) do
+    Rclex.Publisher.publish([state.publisher], [state.payload])
   end
 end
