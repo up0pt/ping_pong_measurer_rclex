@@ -4,6 +4,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
   require Logger
 
   alias PingPongMeasurerRclex.Utils
+  alias PingPongMeasurerRclex.Ping2.Measurer
 
   defmodule State do
     defstruct node_id_list: [], publishers: [], payload: ""
@@ -28,7 +29,9 @@ defmodule PingPongMeasurerRclex.Ping2 do
     {:ok, subscribers} =
       Rclex.Node.create_subscribers(node_id_list, message_type, pong_topic, :multi)
 
-    for {_node_id, index} <- Enum.with_index(node_id_list) do
+    for {node_id, index} <- Enum.with_index(node_id_list) do
+      Measurer.start_link(%{args_tuple: nil, name: node_id})
+
       publisher = Enum.at(publishers, index)
       subscriber = Enum.at(subscribers, index)
 
@@ -36,7 +39,19 @@ defmodule PingPongMeasurerRclex.Ping2 do
         message = Rclex.Msg.read(message, message_type)
         Logger.info('pong: ' ++ message.data)
 
-        Rclex.Publisher.publish([publisher], [Utils.create_payload(message.data)])
+        case Measurer.get_ping_counts(node_id) do
+          0 ->
+            # NOTE: 初回は外部から実行されインクリメントされるので、ここには来ない
+            raise RuntimeError
+
+          100 ->
+            Measurer.stop_measurement(node_id)
+            Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
+            Measurer.reset_ping_counts(node_id)
+
+          _ ->
+            ping(node_id, publisher, payload)
+        end
       end)
     end
 
@@ -48,10 +63,18 @@ defmodule PingPongMeasurerRclex.Ping2 do
   end
 
   def handle_cast(:publish, state) do
-    payloads = for _ <- state.publishers, do: state.payload
+    for publisher <- state.publishers do
+      {node_id, _topic, :pub} = publisher
 
-    Rclex.Publisher.publish(state.publishers, payloads)
+      Measurer.start_measurement(node_id)
+      ping(node_id, publisher, state.payload)
+    end
 
     {:noreply, state}
+  end
+
+  def ping(node_id, publisher, payload) do
+    Rclex.Publisher.publish([publisher], [payload])
+    Measurer.increment_ping_counts(node_id)
   end
 end
