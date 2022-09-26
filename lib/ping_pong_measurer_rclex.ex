@@ -22,7 +22,7 @@ defmodule PingPongMeasurerRclex do
     GenServer.stop(Pong)
   end
 
-  def start_ping_pong() do
-    Ping.publish()
+  def start_ping_pong(payload) do
+    Ping.publish(payload)
   end
 end

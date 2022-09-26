@@ -37,6 +37,7 @@ defmodule PingPongMeasurerRclexTest do
   test "ping pong 2", %{tmp_dir: tmp_dir_path} do
     context = Rclex.rclexinit()
     node_counts = 1
+    payload_bytes = 10
 
     start_supervised!(
       Supervisor.child_spec({Ping2, {context, node_counts, tmp_dir_path}}, id: Ping)
@@ -44,7 +45,7 @@ defmodule PingPongMeasurerRclexTest do
 
     start_supervised!(Supervisor.child_spec({Pong2, {context, node_counts}}, id: Pong))
 
-    Ping2.publish()
+    Ping2.publish(String.duplicate("a", payload_bytes))
 
     Process.sleep(100)
   end
@@ -53,11 +54,12 @@ defmodule PingPongMeasurerRclexTest do
   test "start/stop ping processes", %{tmp_dir: tmp_dir_path} do
     context = Rclex.rclexinit()
     node_counts = 1
+    payload_bytes = 1
 
     PingPongMeasurerRclex.start_ping_processes(context, node_counts, tmp_dir_path)
     PingPongMeasurerRclex.start_pong_processes(context, node_counts)
 
-    PingPongMeasurerRclex.start_ping_pong()
+    PingPongMeasurerRclex.start_ping_pong(String.duplicate("a", payload_bytes))
     Process.sleep(1000)
 
     PingPongMeasurerRclex.stop_ping_processes()

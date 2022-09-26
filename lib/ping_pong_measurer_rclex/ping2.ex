@@ -7,7 +7,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
   alias PingPongMeasurerRclex.Ping2.Measurer
 
   defmodule State do
-    defstruct node_id_list: [], publishers: [], payload: ""
+    defstruct node_id_list: [], publishers: []
   end
 
   def start_link(args_tuple) do
@@ -20,8 +20,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
     message_type = 'StdMsgs.Msg.String'
     ping_topic = 'ping_topic'
     pong_topic = 'pong_topic'
-
-    payload = Utils.create_payload('test')
 
     {:ok, publishers} =
       Rclex.Node.create_publishers(node_id_list, message_type, ping_topic, :multi)
@@ -50,31 +48,32 @@ defmodule PingPongMeasurerRclex.Ping2 do
             Measurer.reset_ping_counts(node_id)
 
           _ ->
-            ping(node_id, publisher, payload)
+            ping(node_id, publisher, message.data)
         end
       end)
     end
 
-    {:ok, %State{node_id_list: node_id_list, publishers: publishers, payload: payload}}
+    {:ok, %State{node_id_list: node_id_list, publishers: publishers}}
   end
 
-  def publish() do
-    GenServer.cast(__MODULE__, :publish)
+  def publish(payload) when is_binary(payload) do
+    GenServer.cast(__MODULE__, {:publish, payload})
   end
 
-  def handle_cast(:publish, state) do
+  def handle_cast({:publish, payload}, %State{} = state) when is_binary(payload) do
     for publisher <- state.publishers do
       {node_id, _topic, :pub} = publisher
 
       Measurer.start_measurement(node_id)
-      ping(node_id, publisher, state.payload)
+
+      ping(node_id, publisher, String.to_charlist(payload))
     end
 
     {:noreply, state}
   end
 
-  def ping(node_id, publisher, payload) do
-    Rclex.Publisher.publish([publisher], [payload])
+  def ping(node_id, publisher, payload_charlist) when is_list(payload_charlist) do
+    Rclex.Publisher.publish([publisher], [Utils.create_payload(payload_charlist)])
     Measurer.increment_ping_counts(node_id)
   end
 end
