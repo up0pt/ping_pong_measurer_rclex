@@ -60,10 +60,10 @@ defmodule PingPongMeasurerRclexTest do
     PingPongMeasurerRclex.start_pong_processes(context, node_counts)
 
     PingPongMeasurerRclex.start_ping_pong(String.duplicate("a", payload_bytes))
-    Process.sleep(1000)
+    PingPongMeasurerRclex.wait_until_all_node_finished(node_counts)
 
     PingPongMeasurerRclex.stop_ping_processes()
     PingPongMeasurerRclex.stop_pong_processes()
-    Process.sleep(1000)
+    Process.sleep(100)
   end
 end

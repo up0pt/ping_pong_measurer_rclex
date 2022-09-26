@@ -7,7 +7,13 @@ defmodule PingPongMeasurerRclex.Ping2 do
   alias PingPongMeasurerRclex.Ping2.Measurer
 
   defmodule State do
-    defstruct node_id_list: [], publishers: []
+    defstruct context: nil,
+              node_id_list: [],
+              publishers: [],
+              subscribers: [],
+              message_type: '',
+              data_directory_path: "",
+              from: nil
   end
 
   def start_link(args_tuple) do
@@ -27,37 +33,23 @@ defmodule PingPongMeasurerRclex.Ping2 do
     {:ok, subscribers} =
       Rclex.Node.create_subscribers(node_id_list, message_type, pong_topic, :multi)
 
-    for {node_id, index} <- Enum.with_index(node_id_list) do
-      Measurer.start_link(%{node_id: node_id, data_directory_path: data_directory_path})
-
-      publisher = Enum.at(publishers, index)
-      subscriber = Enum.at(subscribers, index)
-
-      Rclex.Subscriber.start_subscribing(subscriber, context, fn message ->
-        message = Rclex.Msg.read(message, message_type)
-        Logger.info('pong: ' ++ message.data)
-
-        case Measurer.get_ping_counts(node_id) do
-          0 ->
-            # NOTE: 初回は外部から実行されインクリメントされるので、ここには来ない
-            raise RuntimeError
-
-          100 ->
-            Measurer.stop_measurement(node_id)
-            Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
-            Measurer.reset_ping_counts(node_id)
-
-          _ ->
-            ping(node_id, publisher, message.data)
-        end
-      end)
-    end
-
-    {:ok, %State{node_id_list: node_id_list, publishers: publishers}}
+    {:ok,
+     %State{
+       context: context,
+       node_id_list: node_id_list,
+       publishers: publishers,
+       subscribers: subscribers,
+       message_type: message_type,
+       data_directory_path: data_directory_path
+     }}
   end
 
   def publish(payload) when is_binary(payload) do
     GenServer.cast(__MODULE__, {:publish, payload})
+  end
+
+  def start_subscribing(from \\ self()) when is_pid(from) do
+    GenServer.cast(__MODULE__, {:start_subscribing, from})
   end
 
   def handle_cast({:publish, payload}, %State{} = state) when is_binary(payload) do
@@ -70,6 +62,37 @@ defmodule PingPongMeasurerRclex.Ping2 do
     end
 
     {:noreply, state}
+  end
+
+  def handle_cast({:start_subscribing, from}, %State{} = state) do
+    for {node_id, index} <- Enum.with_index(state.node_id_list) do
+      Measurer.start_link(%{node_id: node_id, data_directory_path: state.data_directory_path})
+
+      publisher = Enum.at(state.publishers, index)
+      subscriber = Enum.at(state.subscribers, index)
+
+      Rclex.Subscriber.start_subscribing(subscriber, state.context, fn message ->
+        message = Rclex.Msg.read(message, state.message_type)
+        Logger.info('pong: ' ++ message.data)
+
+        case Measurer.get_ping_counts(node_id) do
+          0 ->
+            # NOTE: 初回は外部から実行されインクリメントされるので、ここには来ない
+            raise RuntimeError
+
+          100 ->
+            Measurer.stop_measurement(node_id)
+            Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
+            Measurer.reset_ping_counts(node_id)
+            Process.send(from, :finished, _opts = [])
+
+          _ ->
+            ping(node_id, publisher, message.data)
+        end
+      end)
+    end
+
+    {:noreply, %State{state | from: from}}
   end
 
   def ping(node_id, publisher, payload_charlist) when is_list(payload_charlist) do
