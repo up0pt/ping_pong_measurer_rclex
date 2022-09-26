@@ -24,3 +24,5 @@ ping_pong_measurer_rclex-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+/data/
