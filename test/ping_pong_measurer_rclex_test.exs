@@ -32,16 +32,36 @@ defmodule PingPongMeasurerRclexTest do
     Process.sleep(1000)
   end
 
-  test "ping pong 2" do
+  @tag :do_not_test
+  @tag :tmp_dir
+  test "ping pong 2", %{tmp_dir: tmp_dir_path} do
     context = Rclex.rclexinit()
     node_counts = 1
 
-    start_supervised!(Supervisor.child_spec({Ping2, {context, node_counts}}, id: Ping))
+    start_supervised!(
+      Supervisor.child_spec({Ping2, {context, node_counts, tmp_dir_path}}, id: Ping)
+    )
 
     start_supervised!(Supervisor.child_spec({Pong2, {context, node_counts}}, id: Pong))
 
     Ping2.publish()
 
     Process.sleep(100)
+  end
+
+  @tag :tmp_dir
+  test "start/stop ping processes", %{tmp_dir: tmp_dir_path} do
+    context = Rclex.rclexinit()
+    node_counts = 1
+
+    PingPongMeasurerRclex.start_ping_processes(context, node_counts, tmp_dir_path)
+    PingPongMeasurerRclex.start_pong_processes(context, node_counts)
+
+    PingPongMeasurerRclex.start_ping_pong()
+    Process.sleep(1000)
+
+    PingPongMeasurerRclex.stop_ping_processes()
+    PingPongMeasurerRclex.stop_pong_processes()
+    Process.sleep(1000)
   end
 end

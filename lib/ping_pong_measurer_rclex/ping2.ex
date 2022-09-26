@@ -14,7 +14,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
     GenServer.start_link(__MODULE__, args_tuple, name: __MODULE__)
   end
 
-  def init({context, node_counts}) when is_integer(node_counts) do
+  def init({context, node_counts, data_directory_path}) when is_integer(node_counts) do
     {:ok, node_id_list} = Rclex.ResourceServer.create_nodes(context, 'ping_node', node_counts)
 
     message_type = 'StdMsgs.Msg.String'
@@ -30,7 +30,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
       Rclex.Node.create_subscribers(node_id_list, message_type, pong_topic, :multi)
 
     for {node_id, index} <- Enum.with_index(node_id_list) do
-      Measurer.start_link(%{args_tuple: nil, name: node_id})
+      Measurer.start_link(%{node_id: node_id, data_directory_path: data_directory_path})
 
       publisher = Enum.at(publishers, index)
       subscriber = Enum.at(subscribers, index)

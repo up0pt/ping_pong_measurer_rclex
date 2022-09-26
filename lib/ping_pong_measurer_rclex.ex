@@ -3,16 +3,26 @@ defmodule PingPongMeasurerRclex do
   Documentation for `PingPongMeasurerRclex`.
   """
 
-  @doc """
-  Hello world.
+  alias PingPongMeasurerRclex.Ping2, as: Ping
+  alias PingPongMeasurerRclex.Pong2, as: Pong
 
-  ## Examples
+  def start_ping_processes(context, node_counts, data_directory_path) do
+    Ping.start_link({context, node_counts, data_directory_path})
+  end
 
-      iex> PingPongMeasurerRclex.hello()
-      :world
+  def stop_ping_processes() do
+    GenServer.stop(Ping)
+  end
 
-  """
-  def hello do
-    :world
+  def start_pong_processes(context, node_counts) do
+    Pong.start_link({context, node_counts})
+  end
+
+  def stop_pong_processes() do
+    GenServer.stop(Pong)
+  end
+
+  def start_ping_pong() do
+    Ping.publish()
   end
 end

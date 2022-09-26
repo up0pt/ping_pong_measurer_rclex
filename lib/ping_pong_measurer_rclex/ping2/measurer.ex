@@ -1,8 +1,12 @@
 defmodule PingPongMeasurerRclex.Ping2.Measurer do
   use GenServer
 
+  require Logger
+
+  alias PingPongMeasurerRclex.Data
+
   defmodule State do
-    defstruct ping_counts: 0, measurements: []
+    defstruct ping_counts: 0, measurements: [], data_directory_path: "", process_index: 0
   end
 
   defmodule Measurement do
@@ -15,8 +19,8 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
           }
   end
 
-  def start_link(%{args_tuple: args_tuple, name: name}) do
-    GenServer.start_link(__MODULE__, args_tuple, name: to_global(name))
+  def start_link(%{node_id: node_id} = args_map) do
+    GenServer.start_link(__MODULE__, args_map, name: to_global(node_id))
   end
 
   def get_ping_counts(name) do
@@ -43,8 +47,31 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
     GenServer.call(to_global(name), :get_measurement_time)
   end
 
-  def init(_args_tuple) do
-    {:ok, %State{ping_counts: 0}}
+  def init(%{node_id: node_id, data_directory_path: data_directory_path} = _args_map) do
+    Process.flag(:trap_exit, true)
+
+    'ping_node' ++ index = node_id
+
+    {:ok,
+     %State{
+       ping_counts: 0,
+       process_index: List.to_integer(index),
+       data_directory_path: data_directory_path
+     }}
+  end
+
+  def terminate(
+        _reason,
+        %State{
+          measurements: measurements,
+          data_directory_path: data_directory_path,
+          process_index: process_index
+        } = _state
+      ) do
+    # ex. if process_index == 99, do: "0099.csv"
+    file_name = "#{String.pad_leading("#{process_index}", 4, "0")}.csv"
+    file_path = Path.join(data_directory_path, file_name)
+    Data.save(file_path, [header() | body(measurements)])
   end
 
   def handle_call(:get_ping_counts, _from, %State{} = state) do
@@ -80,5 +107,32 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
 
   defp to_global(node_id_charlist) when is_list(node_id_charlist) do
     {:global, node_id_charlist ++ '_measurer'}
+  end
+
+  defp header() do
+    [
+      "measurement_time(utc)",
+      "send time[microsecond]",
+      "recv time[microsecond]",
+      "took time[ms]"
+    ]
+  end
+
+  @spec body([Measurement.t()]) :: list()
+  defp body(measurements) when is_list(measurements) do
+    Enum.reduce(measurements, [], fn %Measurement{} = measurement, rows ->
+      row = [
+        measurement.measurement_time,
+        measurement.send_time,
+        measurement.recv_time,
+        took_time_ms(measurement)
+      ]
+
+      [row | rows]
+    end)
+  end
+
+  defp took_time_ms(%Measurement{} = measurement) do
+    (measurement.recv_time - measurement.send_time) / 1000
   end
 end
