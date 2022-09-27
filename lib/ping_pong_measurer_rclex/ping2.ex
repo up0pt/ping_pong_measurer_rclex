@@ -78,6 +78,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
         case Measurer.get_ping_counts(node_id) do
           0 ->
             # NOTE: 初回は外部から実行されインクリメントされるので、ここには来ない
+            #       ここに来る場合は同一ネットワーク内に Pong が複数起動していないか確認すること
             raise RuntimeError
 
           100 ->
