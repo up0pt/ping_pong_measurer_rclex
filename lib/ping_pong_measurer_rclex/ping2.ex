@@ -3,6 +3,12 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
   require Logger
 
+  @ping_max 100
+  @message_type 'StdMsgs.Msg.String'
+  @ping_topic 'ping_topic'
+  @pong_topic 'pong_topic'
+  @node_id_prefix 'ping_node'
+
   alias PingPongMeasurerRclex.Utils
   alias PingPongMeasurerRclex.Ping2.Measurer
 
@@ -11,7 +17,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
               node_id_list: [],
               publishers: [],
               subscribers: [],
-              message_type: '',
               data_directory_path: "",
               from: nil
   end
@@ -21,17 +26,13 @@ defmodule PingPongMeasurerRclex.Ping2 do
   end
 
   def init({context, node_counts, data_directory_path}) when is_integer(node_counts) do
-    {:ok, node_id_list} = Rclex.ResourceServer.create_nodes(context, 'ping_node', node_counts)
-
-    message_type = 'StdMsgs.Msg.String'
-    ping_topic = 'ping_topic'
-    pong_topic = 'pong_topic'
+    {:ok, node_id_list} = Rclex.ResourceServer.create_nodes(context, @node_id_prefix, node_counts)
 
     {:ok, publishers} =
-      Rclex.Node.create_publishers(node_id_list, message_type, ping_topic, :multi)
+      Rclex.Node.create_publishers(node_id_list, @message_type, @ping_topic, :multi)
 
     {:ok, subscribers} =
-      Rclex.Node.create_subscribers(node_id_list, message_type, pong_topic, :multi)
+      Rclex.Node.create_subscribers(node_id_list, @message_type, @pong_topic, :multi)
 
     for node_id <- node_id_list do
       Measurer.start_link(%{node_id: node_id, data_directory_path: data_directory_path})
@@ -43,7 +44,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
        node_id_list: node_id_list,
        publishers: publishers,
        subscribers: subscribers,
-       message_type: message_type,
        data_directory_path: data_directory_path
      }}
   end
@@ -69,11 +69,14 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
   def handle_cast({:start_subscribing, from}, %State{} = state) do
     for {node_id, index} <- Enum.with_index(state.node_id_list) do
-      publisher = Enum.at(state.publishers, index)
-      subscriber = Enum.at(state.subscribers, index)
+      {_, @ping_topic ++ publisher_index, :pub} = publisher = Enum.at(state.publishers, index)
+      {_, @pong_topic ++ subscriber_index, :sub} = subscriber = Enum.at(state.subscribers, index)
+
+      # assert index
+      ^publisher_index = subscriber_index
 
       Rclex.Subscriber.start_subscribing(subscriber, state.context, fn message ->
-        message = Rclex.Msg.read(message, state.message_type)
+        message = Rclex.Msg.read(message, @message_type)
         Logger.debug('pong: ' ++ message.data)
 
         case Measurer.get_ping_counts(node_id) do
@@ -82,7 +85,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
             #       ここに来る場合は同一ネットワーク内に Pong が複数起動していないか確認すること
             raise RuntimeError
 
-          100 ->
+          @ping_max ->
             Measurer.stop_measurement(node_id)
             Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
             Measurer.reset_ping_counts(node_id)
