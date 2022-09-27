@@ -3,6 +3,8 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
 
   require Logger
 
+  @node_id_prefix 'ping_node'
+
   alias PingPongMeasurerRclex.Data
 
   defmodule State do
@@ -50,7 +52,7 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
   def init(%{node_id: node_id, data_directory_path: data_directory_path} = _args_map) do
     Process.flag(:trap_exit, true)
 
-    'ping_node' ++ index = node_id
+    @node_id_prefix ++ index = node_id
 
     {:ok,
      %State{
