@@ -56,6 +56,7 @@ defmodule PingPongMeasurerRclexTest do
     node_counts = 1
     payload_bytes = 1
 
+    PingPongMeasurerRclex.start_os_info_measurement(tmp_dir_path)
     PingPongMeasurerRclex.start_ping_processes(context, node_counts, tmp_dir_path)
     PingPongMeasurerRclex.start_pong_processes(context, node_counts)
 
@@ -65,5 +66,6 @@ defmodule PingPongMeasurerRclexTest do
     PingPongMeasurerRclex.stop_ping_processes()
     PingPongMeasurerRclex.stop_pong_processes()
     Process.sleep(100)
+    PingPongMeasurerRclex.stop_os_info_measurement()
   end
 end
