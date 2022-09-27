@@ -8,6 +8,7 @@ defmodule PingPongMeasurerRclex do
 
   def start_ping_processes(context, node_counts, data_directory_path) do
     Ping.start_link({context, node_counts, data_directory_path})
+    Ping.start_subscribing()
   end
 
   def stop_ping_processes() do
@@ -23,7 +24,6 @@ defmodule PingPongMeasurerRclex do
   end
 
   def start_ping_pong(payload) do
-    Ping.start_subscribing()
     Ping.publish(payload)
   end
 
