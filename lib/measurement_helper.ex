@@ -12,6 +12,7 @@ defmodule MeasurementHelper do
     PingPongMeasurerRclex.start_os_info_measurement(data_directory_path)
     # PingPongMeasurerRclex.start_pong_processes(context, node_counts)
     PingPongMeasurerRclex.start_ping_processes(context, node_counts, data_directory_path)
+    PingPongMeasurerRclex.start_ping_measurer(data_directory_path)
 
     for i <- 1..measurement_times do
       PingPongMeasurerRclex.start_ping_pong(String.duplicate("a", payload_bytes))
@@ -20,8 +21,9 @@ defmodule MeasurementHelper do
       Logger.info(">>>>>>>>>> #{i}/#{measurement_times}")
     end
 
-    # PingPongMeasurerRclex.stop_pong_processes()
+    PingPongMeasurerRclex.stop_ping_measurer()
     PingPongMeasurerRclex.stop_ping_processes()
+    # PingPongMeasurerRclex.stop_pong_processes()
     PingPongMeasurerRclex.stop_os_info_measurement()
   end
 

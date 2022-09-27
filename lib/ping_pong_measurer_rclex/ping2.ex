@@ -34,10 +34,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
     {:ok, subscribers} =
       Rclex.Node.create_subscribers(node_id_list, @message_type, @pong_topic, :multi)
 
-    for node_id <- node_id_list do
-      Measurer.start_link(%{node_id: node_id, data_directory_path: data_directory_path})
-    end
-
     {:ok,
      %State{
        context: context,
@@ -48,12 +44,20 @@ defmodule PingPongMeasurerRclex.Ping2 do
      }}
   end
 
+  def get_node_id_list() do
+    GenServer.call(__MODULE__, :get_node_id_list)
+  end
+
   def publish(payload) when is_binary(payload) do
     GenServer.cast(__MODULE__, {:publish, payload})
   end
 
   def start_subscribing(from \\ self()) when is_pid(from) do
     GenServer.cast(__MODULE__, {:start_subscribing, from})
+  end
+
+  def handle_call(:get_node_id_list, _from, state) do
+    {:reply, state.node_id_list, state}
   end
 
   def handle_cast({:publish, payload}, %State{} = state) when is_binary(payload) do

@@ -8,6 +8,7 @@ defmodule PingPongMeasurerRclex do
 
   alias PingPongMeasurerRclex.OsInfo.CpuMeasurer
   alias PingPongMeasurerRclex.OsInfo.MemoryMeasurer
+  alias PingPongMeasurerRclex.Ping2.Measurer, as: PingMeasurer
 
   def start_ping_processes(context, node_counts, data_directory_path) do
     Ping.start_link({context, node_counts, data_directory_path})
@@ -61,7 +62,27 @@ defmodule PingPongMeasurerRclex do
     DynamicSupervisor.stop(os_info_supervisor_name())
   end
 
+  def start_ping_measurer(data_directory_path) when is_binary(data_directory_path) do
+    ds_name = ping_measurer_supervisor_name()
+    PingPongMeasurerRclex.DynamicSupervisor.start_link(ds_name)
+
+    for node_id <- Ping.get_node_id_list() do
+      DynamicSupervisor.start_child(
+        ds_name,
+        {PingMeasurer, %{node_id: node_id, data_directory_path: data_directory_path}}
+      )
+    end
+  end
+
+  def stop_ping_measurer() do
+    DynamicSupervisor.stop(ping_measurer_supervisor_name())
+  end
+
   defp os_info_supervisor_name() do
     Module.concat(__MODULE__, OsInfo.DynamicSupervisor)
+  end
+
+  defp ping_measurer_supervisor_name() do
+    Module.concat(__MODULE__, Ping.Measurer.DynamicSupervisor)
   end
 end
