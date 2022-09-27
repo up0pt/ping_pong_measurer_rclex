@@ -74,7 +74,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
       Rclex.Subscriber.start_subscribing(subscriber, state.context, fn message ->
         message = Rclex.Msg.read(message, state.message_type)
-        Logger.info('pong: ' ++ message.data)
+        Logger.debug('pong: ' ++ message.data)
 
         case Measurer.get_ping_counts(node_id) do
           0 ->

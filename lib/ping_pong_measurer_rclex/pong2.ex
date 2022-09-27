@@ -28,7 +28,7 @@ defmodule PingPongMeasurerRclex.Pong2 do
 
       Rclex.Subscriber.start_subscribing([subscriber], context, fn message ->
         message = Rclex.Msg.read(message, message_type)
-        Logger.info('ping: ' ++ message.data)
+        Logger.debug('ping: ' ++ message.data)
 
         Rclex.Publisher.publish([publisher], [Utils.create_payload(message.data)])
       end)

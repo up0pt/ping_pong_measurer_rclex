@@ -17,8 +17,7 @@ defmodule MeasurementHelper do
       PingPongMeasurerRclex.start_ping_pong(String.duplicate("a", payload_bytes))
       PingPongMeasurerRclex.wait_until_all_nodes_finished(node_counts)
 
-      Logger.error(">>>>>>>>>> #{i}/#{measurement_times}")
-      Process.sleep(1000)
+      Logger.info(">>>>>>>>>> #{i}/#{measurement_times}")
     end
 
     # PingPongMeasurerRclex.stop_pong_processes()
