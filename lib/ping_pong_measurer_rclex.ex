@@ -27,13 +27,13 @@ defmodule PingPongMeasurerRclex do
     Ping.publish(payload)
   end
 
-  def wait_until_all_node_finished(node_counts, finished_node_counts \\ 0) do
+  def wait_until_all_nodes_finished(node_counts, finished_node_counts \\ 0) do
     receive do
       :finished ->
         finished_node_counts = finished_node_counts + 1
 
         if(node_counts > finished_node_counts) do
-          wait_until_all_node_finished(node_counts, finished_node_counts)
+          wait_until_all_nodes_finished(node_counts, finished_node_counts)
         end
     end
   end
