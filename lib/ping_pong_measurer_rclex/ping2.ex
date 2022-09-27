@@ -33,6 +33,10 @@ defmodule PingPongMeasurerRclex.Ping2 do
     {:ok, subscribers} =
       Rclex.Node.create_subscribers(node_id_list, message_type, pong_topic, :multi)
 
+    for node_id <- node_id_list do
+      Measurer.start_link(%{node_id: node_id, data_directory_path: data_directory_path})
+    end
+
     {:ok,
      %State{
        context: context,
@@ -57,7 +61,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
       {node_id, _topic, :pub} = publisher
 
       Measurer.start_measurement(node_id)
-
       ping(node_id, publisher, String.to_charlist(payload))
     end
 
@@ -66,8 +69,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
   def handle_cast({:start_subscribing, from}, %State{} = state) do
     for {node_id, index} <- Enum.with_index(state.node_id_list) do
-      Measurer.start_link(%{node_id: node_id, data_directory_path: state.data_directory_path})
-
       publisher = Enum.at(state.publishers, index)
       subscriber = Enum.at(state.subscribers, index)
 
