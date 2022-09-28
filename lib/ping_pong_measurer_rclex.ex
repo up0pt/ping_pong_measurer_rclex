@@ -3,6 +3,8 @@ defmodule PingPongMeasurerRclex do
   Documentation for `PingPongMeasurerRclex`.
   """
 
+  require Logger
+
   alias PingPongMeasurerRclex.Ping2, as: Ping
   alias PingPongMeasurerRclex.Pong2, as: Pong
 
@@ -13,10 +15,14 @@ defmodule PingPongMeasurerRclex do
   def start_ping_processes(context, node_counts, data_directory_path) do
     Ping.start_link({context, node_counts, data_directory_path})
     Ping.start_subscribing()
+
+    Logger.info("start_ping_processes done.")
   end
 
   def stop_ping_processes() do
     GenServer.stop(Ping)
+
+    Logger.info("stop_ping_processes done.")
   end
 
   def start_pong_processes(context, node_counts) do
@@ -29,6 +35,8 @@ defmodule PingPongMeasurerRclex do
 
   def start_ping_pong(payload) do
     Ping.publish(payload)
+
+    Logger.info("start_ping_pong done.")
   end
 
   def wait_until_all_nodes_finished(node_counts, finished_node_counts \\ 0) do
@@ -56,10 +64,14 @@ defmodule PingPongMeasurerRclex do
       ds_name,
       {MemoryMeasurer, {data_directory_path, measurement_cycle_ms}}
     )
+
+    Logger.info("start_os_info_measurement done.")
   end
 
   def stop_os_info_measurement() do
     DynamicSupervisor.stop(os_info_supervisor_name())
+
+    Logger.info("stop_os_info_measurement done.")
   end
 
   def start_ping_measurer(data_directory_path) when is_binary(data_directory_path) do
@@ -72,10 +84,14 @@ defmodule PingPongMeasurerRclex do
         {PingMeasurer, %{node_id: node_id, data_directory_path: data_directory_path}}
       )
     end
+
+    Logger.info("start_ping_measurer done.")
   end
 
   def stop_ping_measurer() do
     DynamicSupervisor.stop(ping_measurer_supervisor_name())
+
+    Logger.info("stop_ping_measurer done.")
   end
 
   defp os_info_supervisor_name() do
