@@ -1,5 +1,7 @@
 defmodule PingPongMeasurerRclex.Ping2.Measurer do
-  use GenServer
+  # NOTE: USE SHUTDOWN PARAMETER LIKE BELOW,
+  #       WHEN YOUR CODES NEED SOME TIME TO PROCESS TERMINATE FUNCTION
+  use GenServer, shutdown: :infinity
 
   require Logger
 
@@ -73,6 +75,7 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
     # ex. if process_index == 99, do: "0099.csv"
     file_name = "#{String.pad_leading("#{process_index}", 4, "0")}.csv"
     file_path = Path.join(data_directory_path, file_name)
+
     Data.save(file_path, [header() | body(measurements)])
   end
 

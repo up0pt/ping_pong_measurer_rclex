@@ -1,5 +1,5 @@
 defmodule PingPongMeasurerRclex.OsInfo.MemoryMeasurer do
-  use GenServer
+  use GenServer, shutdown: :infinity
   require Logger
 
   defmodule State do

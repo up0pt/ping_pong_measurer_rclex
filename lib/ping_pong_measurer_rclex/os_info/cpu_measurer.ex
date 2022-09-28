@@ -1,5 +1,5 @@
 defmodule PingPongMeasurerRclex.OsInfo.CpuMeasurer do
-  use GenServer
+  use GenServer, shutdown: :infinity
   require Logger
 
   defmodule State do
