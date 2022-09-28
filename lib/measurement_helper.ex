@@ -10,7 +10,6 @@ defmodule MeasurementHelper do
     context = Rclex.rclexinit()
 
     PingPongMeasurerRclex.start_os_info_measurement(data_directory_path)
-    # PingPongMeasurerRclex.start_pong_processes(context, node_counts)
     PingPongMeasurerRclex.start_ping_processes(context, node_counts, data_directory_path)
     PingPongMeasurerRclex.start_ping_measurer(data_directory_path)
 
@@ -23,7 +22,6 @@ defmodule MeasurementHelper do
 
     PingPongMeasurerRclex.stop_ping_measurer()
     PingPongMeasurerRclex.stop_ping_processes()
-    # PingPongMeasurerRclex.stop_pong_processes()
     PingPongMeasurerRclex.stop_os_info_measurement()
   end
 
