@@ -1,6 +1,5 @@
 defmodule PingPongMeasurerRclex.OsInfo.MemoryMeasurer do
   use GenServer, shutdown: :infinity
-  require Logger
 
   defmodule State do
     defstruct measurements: [], data_directory_path: nil, measurement_cycle_ms: 100
@@ -24,11 +23,9 @@ defmodule PingPongMeasurerRclex.OsInfo.MemoryMeasurer do
   end
 
   def terminate(
-        reason,
+        :shutdown,
         %State{measurements: measurements, data_directory_path: data_directory_path} = _state
       ) do
-    Logger.debug("#{inspect(reason)}")
-
     file_path = Path.join(data_directory_path, "memory.csv")
     PingPongMeasurerRclex.Data.save(file_path, [header() | body(measurements)])
   end

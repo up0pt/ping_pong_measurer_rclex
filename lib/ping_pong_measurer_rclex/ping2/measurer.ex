@@ -65,7 +65,7 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
   end
 
   def terminate(
-        _reason,
+        :shutdown,
         %State{
           measurements: measurements,
           data_directory_path: data_directory_path,
