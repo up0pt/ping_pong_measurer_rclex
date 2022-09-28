@@ -37,12 +37,12 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
     GenServer.cast(to_global(name), :reset_ping_counts)
   end
 
-  def start_measurement(name) do
-    GenServer.cast(to_global(name), :start_measurement)
+  def start_measurement(name, %DateTime{} = dt, monotonic_time) do
+    GenServer.cast(to_global(name), {:start_measurement, dt, monotonic_time})
   end
 
-  def stop_measurement(name) do
-    GenServer.cast(to_global(name), :stop_measurement)
+  def stop_measurement(name, monotonic_time) do
+    GenServer.cast(to_global(name), {:stop_measurement, monotonic_time})
   end
 
   def get_measurement_time(name) do
@@ -93,17 +93,20 @@ defmodule PingPongMeasurerRclex.Ping2.Measurer do
     {:noreply, %State{state | ping_counts: 0}}
   end
 
-  def handle_cast(:start_measurement, %State{measurements: measurements} = state) do
+  def handle_cast(
+        {:start_measurement, %DateTime{} = dt, monotonic_time},
+        %State{measurements: measurements} = state
+      ) do
     measurement = %Measurement{
-      measurement_time: DateTime.utc_now(),
-      send_time: System.monotonic_time(:microsecond)
+      measurement_time: dt,
+      send_time: monotonic_time
     }
 
     {:noreply, %State{state | measurements: [measurement | measurements]}}
   end
 
-  def handle_cast(:stop_measurement, %State{measurements: [h | t]} = state) do
-    h = %Measurement{h | recv_time: System.monotonic_time(:microsecond)}
+  def handle_cast({:stop_measurement, monotonic_time}, %State{measurements: [h | t]} = state) do
+    h = %Measurement{h | recv_time: monotonic_time}
     {:noreply, %State{state | measurements: [h | t]}}
   end
 

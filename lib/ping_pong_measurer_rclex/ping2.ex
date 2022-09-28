@@ -8,6 +8,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
   @ping_topic 'ping_topic'
   @pong_topic 'pong_topic'
   @node_id_prefix 'ping_node'
+  @monotonic_time_unit :microsecond
 
   alias PingPongMeasurerRclex.Utils
   alias PingPongMeasurerRclex.Ping2.Measurer
@@ -64,7 +65,12 @@ defmodule PingPongMeasurerRclex.Ping2 do
     for publisher <- state.publishers do
       {node_id, _topic, :pub} = publisher
 
-      Measurer.start_measurement(node_id)
+      Measurer.start_measurement(
+        node_id,
+        DateTime.utc_now(),
+        System.monotonic_time(@monotonic_time_unit)
+      )
+
       ping(node_id, publisher, String.to_charlist(payload))
     end
 
@@ -90,7 +96,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
             raise RuntimeError
 
           @ping_max ->
-            Measurer.stop_measurement(node_id)
+            Measurer.stop_measurement(node_id, System.monotonic_time(@monotonic_time_unit))
             Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
             Measurer.reset_ping_counts(node_id)
             Process.send(from, :finished, _opts = [])
