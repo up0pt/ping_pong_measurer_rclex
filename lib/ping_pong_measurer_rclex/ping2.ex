@@ -54,7 +54,9 @@ defmodule PingPongMeasurerRclex.Ping2 do
   end
 
   def publish(publishers, payload) when is_binary(payload) do
-    Enum.map(publishers, fn publisher ->
+    publishers
+    |> Flow.from_enumerable(max_demand: 1, stages: Enum.count(publishers))
+    |> Flow.map(fn publisher ->
       {node_id, _topic, :pub} = publisher
 
       Measurer.start_measurement(
@@ -65,6 +67,7 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
       ping(node_id, publisher, String.to_charlist(payload))
     end)
+    |> Enum.to_list()
   end
 
   def start_subscribing(from \\ self()) when is_pid(from) do
