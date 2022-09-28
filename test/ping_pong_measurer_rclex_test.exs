@@ -45,7 +45,8 @@ defmodule PingPongMeasurerRclexTest do
 
     start_supervised!(Supervisor.child_spec({Pong2, {context, node_counts}}, id: Pong))
 
-    Ping2.publish(String.duplicate("a", payload_bytes))
+    Ping2.get_publishers()
+    |> Ping2.publish(String.duplicate("a", payload_bytes))
 
     Process.sleep(100)
   end

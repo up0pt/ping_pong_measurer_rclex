@@ -49,8 +49,22 @@ defmodule PingPongMeasurerRclex.Ping2 do
     GenServer.call(__MODULE__, :get_node_id_list)
   end
 
-  def publish(payload) when is_binary(payload) do
-    GenServer.cast(__MODULE__, {:publish, payload})
+  def get_publishers do
+    GenServer.call(__MODULE__, :get_publishers)
+  end
+
+  def publish(publishers, payload) when is_binary(payload) do
+    Enum.map(publishers, fn publisher ->
+      {node_id, _topic, :pub} = publisher
+
+      Measurer.start_measurement(
+        node_id,
+        DateTime.utc_now(),
+        System.monotonic_time(@monotonic_time_unit)
+      )
+
+      ping(node_id, publisher, String.to_charlist(payload))
+    end)
   end
 
   def start_subscribing(from \\ self()) when is_pid(from) do
@@ -61,20 +75,8 @@ defmodule PingPongMeasurerRclex.Ping2 do
     {:reply, state.node_id_list, state}
   end
 
-  def handle_cast({:publish, payload}, %State{} = state) when is_binary(payload) do
-    for publisher <- state.publishers do
-      {node_id, _topic, :pub} = publisher
-
-      Measurer.start_measurement(
-        node_id,
-        DateTime.utc_now(),
-        System.monotonic_time(@monotonic_time_unit)
-      )
-
-      ping(node_id, publisher, String.to_charlist(payload))
-    end
-
-    {:noreply, state}
+  def handle_call(:get_publishers, _from, state) do
+    {:reply, state.publishers, state}
   end
 
   def handle_cast({:start_subscribing, from}, %State{} = state) do

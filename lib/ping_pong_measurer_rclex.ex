@@ -34,7 +34,8 @@ defmodule PingPongMeasurerRclex do
   end
 
   def start_ping_pong(payload) do
-    Ping.publish(payload)
+    Ping.get_publishers()
+    |> Ping.publish(payload)
   end
 
   def wait_until_all_nodes_finished(node_counts, finished_node_counts \\ 0) do
