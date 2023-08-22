@@ -92,7 +92,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
       Rclex.Subscriber.start_subscribing(subscriber, state.context, fn message ->
         message = Rclex.Msg.read(message, @message_type)
-        Logger.debug('pong: ' ++ message.data)
 
         case Measurer.get_ping_counts(node_id) do
           0 ->
@@ -102,7 +101,6 @@ defmodule PingPongMeasurerRclex.Ping2 do
 
           @ping_max ->
             Measurer.stop_measurement(node_id, System.monotonic_time(@monotonic_time_unit))
-            Logger.debug("#{inspect(Measurer.get_measurement_time(node_id))} msec")
             Measurer.reset_ping_counts(node_id)
             Process.send(from, :finished, _opts = [])
 

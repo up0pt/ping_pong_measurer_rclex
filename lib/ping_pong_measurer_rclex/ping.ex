@@ -40,7 +40,6 @@ defmodule PingPongMeasurerRclex.Ping do
     Rclex.Subscriber.start_subscribing([subscriber], context, fn msg ->
       recv_msg = Rclex.Msg.read(msg, 'StdMsgs.Msg.String')
 
-      Logger.info('pong: ' ++ recv_msg.data)
       publish(node_index)
     end)
 
@@ -72,7 +71,6 @@ defmodule PingPongMeasurerRclex.Ping do
         @ping_counts_max ->
           [h | t] = measurements
           measurement = %Measurement{h | recv_time: System.monotonic_time(:microsecond)}
-          IO.inspect("#{inspect((measurement.recv_time - measurement.send_time) / 1000)} msec")
 
           %State{state | ping_counts: 0, measurements: [measurement | t]}
 

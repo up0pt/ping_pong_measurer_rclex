@@ -23,7 +23,6 @@ defmodule PingPongMeasurerRclex.Pong do
 
     Rclex.Subscriber.start_subscribing([subscriber], context, fn msg ->
       recv_msg = Rclex.Msg.read(msg, 'StdMsgs.Msg.String')
-      Logger.info('ping: ' ++ recv_msg.data)
 
       Rclex.Publisher.publish([publisher], [Utils.create_payload(recv_msg.data)])
     end)

@@ -16,8 +16,6 @@ defmodule MeasurementHelper do
     for i <- 1..measurement_times do
       PingPongMeasurerRclex.start_ping_pong(String.duplicate("a", payload_bytes))
       PingPongMeasurerRclex.wait_until_all_nodes_finished(node_counts)
-
-      Logger.info(">>>>>>>>>> #{i}/#{measurement_times}")
     end
 
     PingPongMeasurerRclex.stop_ping_measurer()
